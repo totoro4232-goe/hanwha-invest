@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 기업분석 자동화 시스템 | 한화투자증권</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=JetBrains+Mono:wght@500&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Noto Sans KR',sans-serif;background:#f0f2f5;color:#1a1a1a}
+.mono{font-family:'JetBrains Mono',monospace}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:#f0f2f5}
+::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:2px}
+.sidebar{width:240px;background:#111827;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;color:#9ca3af;text-decoration:none}
+.nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-item.active{background:rgba(243,115,33,.15);color:#f37321}
+.nav-section{font-size:10px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.08em;padding:16px 16px 6px}
+.main-content{margin-left:240px;min-height:100vh;padding:28px 32px}
+.kpi-card{background:#fff;border-radius:16px;padding:20px;border:1px solid #e5e7eb;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-orange::before{background:#f37321}
+.kpi-red::before{background:#ef4444}
+.kpi-blue::before{background:#3b82f6}
+.kpi-green::before{background:#10b981}
+.company-card{background:#fff;border-radius:14px;border:1px solid #e5e7eb;padding:18px;transition:all .2s;cursor:pointer}
+.company-card:hover{border-color:#f37321;transform:translateY(-2px);box-shadow:0 8px 24px rgba(243,115,33,.12)}
+.filter-pill{padding:6px 16px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1.5px solid transparent}
+.filter-pill.active{background:#f37321;color:#fff;border-color:#f37321}
+.filter-pill:not(.active){background:#fff;color:#6b7280;border-color:#e5e7eb}
+.filter-pill:not(.active):hover{border-color:#f37321;color:#f37321}
+.ratio-track{height:6px;background:#f3f4f6;border-radius:3px;overflow:hidden}
+.ratio-fill{height:100%;border-radius:3px;transition:width .6s ease}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:999px;white-space:nowrap}
+.badge-priority{background:#fff7ed;color:#c2410c}
+.badge-alert{background:#fef2f2;color:#b91c1c}
+.badge-normal{background:#eff6ff;color:#1d4ed8}
+.chart-card{background:#fff;border-radius:16px;padding:20px;border:1px solid #e5e7eb}
+.chart-label{font-size:11px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.sector-row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.sector-name{font-size:12px;color:#374151;width:90px;flex-shrink:0;font-weight:500}
+.sector-track{flex:1;height:8px;background:#f3f4f6;border-radius:4px;overflow:hidden}
+.sector-fill{height:100%;border-radius:4px;background:#f37321}
+.sector-count{font-size:11px;color:#9ca3af;width:20px;text-align:right;flex-shrink:0;font-weight:600}
+.search-box{background:#fff;border:1px solid #e5e7eb;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 16px;height:44px;transition:border-color .15s}
+.search-box:focus-within{border-color:#f37321;box-shadow:0 0 0 3px rgba(243,115,33,.1)}
+.search-box input{border:none;outline:none;font-size:13px;flex:1;background:transparent;font-family:'Noto Sans KR',sans-serif}
+.cal-corp-item{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;transition:background .12s;border-bottom:1px solid #f9fafb}
+.cal-corp-item:last-child{border-bottom:none}
+.cal-corp-item:hover{background:#fdf8f5}
+.cal-corp-item.selected{background:#fff7ed;border-right:3px solid #f37321}
+.cal-rank-badge{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0}
+.cal-contact-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cal-timeline{display:flex;flex-direction:column;gap:0}
+.cal-timeline-item{display:grid;grid-template-columns:100px 1fr;gap:0;position:relative}
+.cal-tl-left{padding:0 20px 24px 0;text-align:right;border-right:2px solid #f3f4f6;position:relative}
+.cal-tl-dot{position:absolute;right:-6px;top:4px;width:10px;height:10px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px #e5e7eb;background:#fff}
+.cal-tl-right{padding:0 0 24px 20px}
+.ctype-call{background:#eff6ff;color:#1d4ed8}
+.ctype-meet{background:#f0fdf4;color:#15803d}
+.ctype-mail{background:#faf5ff;color:#7c3aed}
+.ctype-visit{background:#fff7ed;color:#c2410c}
+.fb-positive{background:#f0fdf4;color:#15803d}
+.fb-neutral{background:#f9fafb;color:#6b7280}
+.fb-negative{background:#fef2f2;color:#b91c1c}
+.fb-pending{background:#fffbeb;color:#b45309}
+.cal-form-input{width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .15s;background:#fff;color:#111827}
+.cal-form-input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
+.cal-form-select{width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;transition:border-color .15s;background:#fff;color:#111827;cursor:pointer}
+.cal-form-select:focus{border-color:#8b5cf6}
+.cal-form-textarea{width:100%;border:1px solid #e5e7eb;border-radius:8px;padding:8px 12px;font-size:12px;font-family:'Noto Sans KR',sans-serif;outline:none;resize:vertical;min-height:72px;line-height:1.6;transition:border-color .15s;background:#fff;color:#111827}
+.cal-form-textarea:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.1)}
+.cal-submit-btn{background:#8b5cf6;color:#fff;border:none;border-radius:8px;padding:9px 20px;font-size:12px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:background .15s}
+.cal-submit-btn:hover{background:#7c3aed}
+.cal-delete-btn{background:none;border:none;cursor:pointer;padding:3px 6px;color:#d1d5db;font-size:10px;transition:color .15s;border-radius:4px}
+.cal-delete-btn:hover{color:#ef4444;background:#fef2f2}
+.nav-member-item{display:flex;align-items:center;gap:7px;padding:6px 8px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;color:#6b7280;text-decoration:none}
+.nav-member-item:hover{background:rgba(255,255,255,.06);color:#c4b5fd}
+.nav-member-item.active{background:rgba(139,92,246,.18);color:#a78bfa;font-weight:700}
+.member-dot{width:6px;height:6px;border-radius:50%;background:#4b5563;flex-shrink:0;transition:background .15s}
+.nav-member-item.active .member-dot{background:#a78bfa}
+.member-badge{font-size:9px;font-weight:800;padding:1px 5px;border-radius:999px;margin-left:auto}
+.member-contact-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;margin-bottom:10px;transition:box-shadow .15s}
+.member-contact-card:hover{box-shadow:0 4px 16px rgba(139,92,246,.1);border-color:#e9d5ff}
+.kpi-clickable{cursor:pointer;transition:all .18s}
+.kpi-clickable:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,.1)}
+.kpi-arrow{font-size:11px;color:#9ca3af;opacity:0;transform:translateX(-4px);transition:all .18s;margin-left:4px;align-self:flex-end;padding-bottom:6px}
+.kpi-clickable:hover .kpi-arrow{opacity:1;transform:translateX(0)}
+.kpi-orange.kpi-active{box-shadow:0 0 0 2.5px #f37321;transform:translateY(-2px)}
+.kpi-green.kpi-active{box-shadow:0 0 0 2.5px #10b981;transform:translateY(-2px)}
+.kpi-red.kpi-active{box-shadow:0 0 0 2.5px #ef4444;transform:translateY(-2px)}
+.kpi-blue.kpi-active{box-shadow:0 0 0 2.5px #3b82f6;transform:translateY(-2px)}
+#alarm-panel{position:fixed;left:248px;bottom:24px;z-index:200;width:360px;font-family:'Noto Sans KR',sans-serif}
+#alarm-toggle{display:flex;align-items:center;gap:8px;background:#111827;color:#fff;border:none;border-radius:12px;padding:10px 16px;cursor:pointer;font-size:12px;font-weight:700;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,.35);transition:background .15s;width:100%}
+#alarm-toggle:hover{background:#1f2937}
+#alarm-badge{background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:999px;min-width:18px;text-align:center;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.65}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+#alarm-body{background:#fff;border-radius:14px;border:1px solid #e5e7eb;box-shadow:0 8px 32px rgba(0,0,0,.14);margin-bottom:8px;overflow:hidden;max-height:500px;display:none;flex-direction:column}
+.alarm-head{padding:14px 16px 10px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.alarm-filter-bar{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid #f3f4f6;flex-shrink:0;overflow-x:auto}
+.alarm-filter-btn{padding:4px 10px;border-radius:999px;font-size:10px;font-weight:700;cursor:pointer;border:1.5px solid #e5e7eb;background:#fff;color:#6b7280;transition:all .15s;white-space:nowrap;font-family:'Noto Sans KR',sans-serif}
+.alarm-filter-btn.active{background:#f37321;color:#fff;border-color:#f37321}
+.alarm-list{overflow-y:auto;flex:1}
+.alarm-item{padding:11px 16px;border-bottom:1px solid #f9fafb;cursor:pointer;transition:background .1s}
+.alarm-item:hover{background:#fdf8f5}
+.alarm-item:last-child{border-bottom:none}
+.alarm-corp{font-size:12px;font-weight:700;color:#111827;margin-bottom:3px}
+.alarm-report{font-size:11px;color:#6b7280;line-height:1.45;margin-bottom:4px}
+.alarm-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.alarm-tag{font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;flex-shrink:0}
+.tag-regular{background:#eff6ff;color:#1d4ed8}
+.tag-major{background:#fff7ed;color:#c2410c}
+.tag-share{background:#f0fdf4;color:#15803d}
+.tag-audit{background:#faf5ff;color:#7c3aed}
+.alarm-time{font-size:10px;color:#9ca3af;font-weight:500}
+.alarm-footer{padding:12px 16px;background:#f9fafb;border-top:1px solid #f3f4f6;display:flex;gap:7px;align-items:center;flex-shrink:0}
+.alarm-footer input{flex:1;border:1px solid #e5e7eb;border-radius:7px;padding:6px 10px;font-size:11px;outline:none;font-family:'Noto Sans KR',sans-serif;background:#fff;color:#111827}
+.alarm-footer input:focus{border-color:#f37321}
+.alarm-footer button{background:#f37321;color:#fff;border:none;border-radius:7px;padding:6px 11px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif;white-space:nowrap}
+.alarm-footer button:hover{background:#e06210}
+.toast{position:fixed;bottom:30px;right:30px;z-index:600;background:#111827;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.25);animation:fadeInUp .3s ease;max-width:340px}
+@media(max-width:1024px){.sidebar{display:none}.main-content{margin-left:0;padding:20px 16px}#alarm-panel{left:16px}}
+body.github-pages{padding-top:46px}
+body.github-pages #github-pages-banner{display:block!important;position:fixed}
+body.github-pages .sidebar{top:46px;height:calc(100vh - 46px)}
+body.github-pages .main-content{padding-top:20px}
+@media(max-width:1024px){body.github-pages #github-pages-banner{padding-left:16px!important;padding-right:16px}}
+</style>
+</head>
+<body>
+<div id="github-pages-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:100;background:linear-gradient(90deg,#fef9c3,#fef3c7);border-bottom:1px solid #facc15;padding:10px 20px 10px 252px;font-size:12px;color:#854d0e;line-height:1.5;box-shadow:0 2px 8px rgba(0,0,0,.06)">
+  <strong>GitHub Pages</strong>에서는 정적 파일만 제공됩니다. <b>Open DART 실시간 연동</b>은 PC에서 저장소를 클론한 뒤 <span class="mono" style="background:rgba(255,255,255,.6);padding:1px 6px;border-radius:4px">node server.mjs</span> 실행 후 <span class="mono">http://127.0.0.1:8787</span> 로 여세요. 여기서는 <b>샘플</b> 발행공시·데모 데이터가 표시됩니다.
+</div>
+
+<aside class="sidebar">
+  <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(255,255,255,.08)">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:34px;height:34px;background:#f37321;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:900;color:#fff">H</div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:#fff;line-height:1.2">한화투자증권</div>
+        <div style="font-size:10px;color:#6b7280;font-weight:500">AI 분석 플랫폼</div>
+      </div>
+    </div>
+  </div>
+  <div style="flex:1;padding:12px;overflow-y:auto">
+    <div class="nav-section">핵심 기능</div>
+    <a href="#" class="nav-item active" id="nav-dart" onclick="switchTab('dart');return false;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>AI 기업분석
+    </a>
+    <a href="#" class="nav-item" id="nav-newcorp" onclick="switchTab('newcorp');return false;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>우량기관 발굴
+    </a>
+    <a href="#" class="nav-item" id="nav-calendar" onclick="switchTab('calendar');return false;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>영업 캘린더
+    </a>
+    <div id="nav-members" style="margin-left:8px;border-left:2px solid rgba(139,92,246,.25);padding-left:8px;margin-top:2px;margin-bottom:2px">
+      <div style="font-size:9px;font-weight:700;color:#4b5563;text-transform:uppercase;letter-spacing:.07em;padding:6px 8px 4px">담당자별 기록</div>
+      <a href="#" class="nav-member-item" id="nav-m-김종민" onclick="switchMember('김종민');return false;"><span class="member-dot"></span>김종민</a>
+      <a href="#" class="nav-member-item" id="nav-m-오윤식" onclick="switchMember('오윤식');return false;"><span class="member-dot"></span>오윤식</a>
+      <a href="#" class="nav-member-item" id="nav-m-이대희" onclick="switchMember('이대희');return false;"><span class="member-dot"></span>이대희</a>
+      <a href="#" class="nav-member-item" id="nav-m-남건우" onclick="switchMember('남건우');return false;"><span class="member-dot"></span>남건우</a>
+      <a href="#" class="nav-member-item" id="nav-m-이현우" onclick="switchMember('이현우');return false;"><span class="member-dot"></span>이현우</a>
+      <a href="#" class="nav-member-item" id="nav-m-이승재" onclick="switchMember('이승재');return false;"><span class="member-dot"></span>이승재</a>
+    </div>
+    <div class="nav-section">설정</div>
+    <a href="#" class="nav-item">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 1.8 11.6A10 10 0 0 1 12 22a10 10 0 0 1-10-10c0-2.8 1.13-5.33 2.93-7.14"/></svg>데이터 동기화
+    </a>
+  </div>
+  <div style="padding:14px 16px;border-top:1px solid rgba(255,255,255,.08)">
+    <div style="font-size:10px;color:#4b5563;font-weight:600;text-transform:uppercase;letter-spacing:.06em">마지막 동기화</div>
+    <div style="font-size:12px;color:#9ca3af;margin-top:2px">2026.04.16 — 06:00 KST</div>
+  </div>
+</aside>
+
+<main class="main-content">
+
+<div id="page-dart">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#10b981;box-shadow:0 0 0 3px rgba(16,185,129,.2)"></div>
+        <span style="font-size:11px;font-weight:600;color:#10b981;text-transform:uppercase;letter-spacing:.06em">실시간 분석 활성화</span>
+      </div>
+      <h1 style="font-size:26px;font-weight:900;color:#111827;letter-spacing:-.02em">AI 기업분석 자동화 시스템</h1>
+      <p style="font-size:13px;color:#9ca3af;margin-top:4px">DART 전자공시 기반 유동성 탐지 & 신규 영업기관 발굴 플랫폼</p>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+    <div class="kpi-card kpi-orange kpi-clickable" onclick="kpiClick('all')">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">총 분석 대상</div>
+      <div style="font-size:30px;font-weight:900;color:#111827;display:flex;align-items:baseline;gap:6px" id="kpi-total">—</div>
+      <div style="font-size:11px;color:#f37321;margin-top:6px;font-weight:600">KOSPI·KOSDAQ 상장사</div>
+    </div>
+    <div class="kpi-card kpi-green kpi-clickable" onclick="kpiClick('priority')">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">우선 영업 대상</div>
+      <div style="font-size:30px;font-weight:900;color:#111827;display:flex;align-items:baseline;gap:6px" id="kpi-priority">—</div>
+      <div style="font-size:11px;color:#10b981;margin-top:6px;font-weight:600">유동비율 150% 이상</div>
+    </div>
+    <div class="kpi-card kpi-red kpi-clickable" onclick="kpiClick('alert')">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">유동성 경보</div>
+      <div style="font-size:30px;font-weight:900;color:#111827;display:flex;align-items:baseline;gap:6px" id="kpi-alert">—</div>
+      <div style="font-size:11px;color:#ef4444;margin-top:6px;font-weight:600">유동비율 100% 미만</div>
+    </div>
+    <div class="kpi-card kpi-blue kpi-clickable" onclick="kpiClick('normal')">
+      <div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">평균 유동비율</div>
+      <div style="font-size:30px;font-weight:900;color:#111827;display:flex;align-items:baseline;gap:6px" id="kpi-avg">—</div>
+      <div style="font-size:11px;color:#3b82f6;margin-top:6px;font-weight:600">전체 분석 기업 기준</div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:220px 1fr 1fr;gap:16px;margin-bottom:24px">
+    <div class="chart-card" style="display:flex;flex-direction:column;align-items:center">
+      <div class="chart-label" style="width:100%">영업 기회 분포</div>
+      <div style="position:relative;width:150px;height:150px">
+        <canvas id="donutChart"></canvas>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          <div style="font-size:22px;font-weight:900;color:#111827" id="donut-center">—</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.06em">우선영업</div>
+        </div>
+      </div>
+      <div style="margin-top:14px;width:100%;display:flex;flex-direction:column;gap:7px" id="donut-legend"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">업종별 기업 분포</div>
+      <div id="sector-bars" style="margin-top:4px"></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-label">유동비율 구간별 분포</div>
+      <div style="position:relative;width:100%;height:170px">
+        <canvas id="histChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap">
+    <div class="search-box" style="flex:1;min-width:220px">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="기업명 · 종목코드 · 업종 검색...">
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="setFilter('all')" id="f-all" class="filter-pill active">전체</button>
+      <button onclick="setFilter('priority')" id="f-priority" class="filter-pill">★ 우선영업</button>
+      <button onclick="setFilter('alert')" id="f-alert" class="filter-pill">⚠ 유동성경보</button>
+      <button onclick="setFilter('normal')" id="f-normal" class="filter-pill">일반관찰</button>
+    </div>
+    <div style="font-size:12px;color:#9ca3af;white-space:nowrap" id="result-count"></div>
+  </div>
+  <div id="company-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px"></div>
+  <div id="no-result" style="display:none;text-align:center;padding:60px 0;color:#9ca3af;font-size:14px">검색 결과가 없습니다.</div>
+</div>
+
+<div id="page-newcorp" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#3b82f6;box-shadow:0 0 0 3px rgba(59,130,246,.2)"></div>
+        <span style="font-size:11px;font-weight:600;color:#3b82f6;text-transform:uppercase;letter-spacing:.06em">현금성 자산 기반 분석</span>
+      </div>
+      <h1 style="font-size:26px;font-weight:900;color:#111827;letter-spacing:-.02em">우량기관 발굴</h1>
+      <p style="font-size:13px;color:#9ca3af;margin-top:4px">현금성 자산 규모 기준 — 유동 자금 여력이 높은 우선 영업 대상 기업</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button onclick="ncFilter('all')" id="ncf-all" class="filter-pill active">전체</button>
+      <button onclick="ncFilter('top20')" id="ncf-top20" class="filter-pill">상위 20개</button>
+      <button onclick="ncFilter('finance')" id="ncf-finance" class="filter-pill">금융</button>
+      <button onclick="ncFilter('mfg')" id="ncf-mfg" class="filter-pill">제조·산업</button>
+      <button onclick="ncFilter('tech')" id="ncf-tech" class="filter-pill">IT·플랫폼</button>
+    </div>
+  </div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px">
+    <div class="kpi-card kpi-blue"><div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">총 현금성 자산</div><div style="font-size:26px;font-weight:900;color:#111827" id="nc-kpi-total-cash">—</div><div style="font-size:11px;color:#3b82f6;margin-top:6px;font-weight:600">100개 기업 합산</div></div>
+    <div class="kpi-card kpi-orange"><div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">최대 현금 보유</div><div style="font-size:26px;font-weight:900;color:#111827" id="nc-kpi-max-cash">—</div><div style="font-size:11px;color:#f37321;margin-top:6px;font-weight:600" id="nc-kpi-max-name">—</div></div>
+    <div class="kpi-card kpi-green"><div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">100조 이상 기업</div><div style="font-size:26px;font-weight:900;color:#111827" id="nc-kpi-100t">—</div><div style="font-size:11px;color:#10b981;margin-top:6px;font-weight:600">대형 우선 영업 대상</div></div>
+    <div class="kpi-card" style="border-top:3px solid #8b5cf6"><div style="font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">평균 현금성 자산</div><div style="font-size:26px;font-weight:900;color:#111827" id="nc-kpi-avg-cash">—</div><div style="font-size:11px;color:#8b5cf6;margin-top:6px;font-weight:600">기업당 평균</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 380px;gap:20px;align-items:start">
+    <div class="chart-card" style="padding:0;overflow:hidden">
+      <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700;color:#111827">현금성 자산 순위</span>
+        <span style="font-size:11px;color:#9ca3af;font-weight:600" id="nc-rank-count">—</span>
+      </div>
+      <div id="nc-rank-list" style="max-height:580px;overflow-y:auto"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:16px">
+      <div class="chart-card"><div class="chart-label">업종별 현금성 자산 합계 (상위 8개)</div><div style="position:relative;width:100%;height:220px"><canvas id="nc-sector-chart"></canvas></div></div>
+      <div class="chart-card"><div class="chart-label">현금 보유 구간 분포</div><div id="nc-cash-dist" style="display:flex;flex-direction:column;gap:8px;margin-top:4px"></div></div>
+      <div class="chart-card"><div class="chart-label">DART 바로가기 — 현금 TOP 5</div><div id="nc-top5-links" style="display:flex;flex-direction:column;gap:6px;margin-top:4px"></div></div>
+    </div>
+  </div>
+</div>
+
+<div id="page-calendar" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.2)"></div>
+        <span style="font-size:11px;font-weight:600;color:#8b5cf6;text-transform:uppercase;letter-spacing:.06em">영업 활동 관리</span>
+      </div>
+      <h1 style="font-size:26px;font-weight:900;color:#111827;letter-spacing:-.02em">영업 캘린더</h1>
+      <p style="font-size:13px;color:#9ca3af;margin-top:4px">복합 점수 기반 주간 영업 우선순위 — 매주 월요일 자동 갱신</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#111827" id="cal-total-contacts">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">총 접촉건</div></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#8b5cf6" id="cal-active-corps">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">접촉 기관</div></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#10b981" id="cal-positive-count">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">긍정 반응</div></div>
+    </div>
+  </div>
+
+  <div style="background:linear-gradient(135deg,#faf5ff,#f5f3ff);border:1.5px solid #e9d5ff;border-radius:14px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span style="font-size:13px;font-weight:800;color:#6d28d9">이번 주 영업 우선순위</span>
+    </div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:11px;color:#7c3aed">
+      <span style="display:flex;align-items:center;gap:4px"><span style="background:#8b5cf6;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;font-size:10px">40%</span> 현금성 자산 규모</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="background:#ef4444;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;font-size:10px">25%</span> 유동비율</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="background:#f37321;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;font-size:10px">20%</span> 발행공시 가산점</span>
+      <span style="display:flex;align-items:center;gap:4px"><span style="background:#10b981;color:#fff;border-radius:4px;padding:1px 6px;font-weight:700;font-size:10px">15%</span> 미접촉 기간</span>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <span style="font-size:11px;color:#9ca3af" id="cal-week-label"></span>
+      <button onclick="renderCalendar()" style="background:#8b5cf6;color:#fff;border:none;padding:6px 14px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Noto Sans KR',sans-serif">순위 갱신</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:320px 1fr;gap:20px;align-items:start">
+    <div style="background:#fff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden;position:sticky;top:20px">
+      <div style="padding:14px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;justify-content:space-between">
+        <span style="font-size:13px;font-weight:700;color:#111827">이번 주 TOP 10</span>
+        <span style="font-size:10px;color:#8b5cf6;font-weight:700;background:#faf5ff;padding:2px 8px;border-radius:4px">복합점수순</span>
+      </div>
+      <div id="cal-corp-list"></div>
+    </div>
+    <div id="cal-detail-panel">
+      <div style="background:#fff;border-radius:16px;border:1px solid #e5e7eb;padding:40px;text-align:center;color:#9ca3af">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;display:block;opacity:.4"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        <div style="font-size:13px;font-weight:600">왼쪽에서 기관을 선택하세요</div>
+        <div style="font-size:11px;margin-top:4px">접촉 이력 및 피드백을 확인하고 작성할 수 있습니다</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="page-member" style="display:none">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap;gap:16px">
+    <div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="width:8px;height:8px;border-radius:50%;background:#8b5cf6;box-shadow:0 0 0 3px rgba(139,92,246,.2)"></div>
+        <span style="font-size:11px;font-weight:600;color:#8b5cf6;text-transform:uppercase;letter-spacing:.06em">담당자 기록 조회</span>
+      </div>
+      <h1 style="font-size:26px;font-weight:900;color:#111827;letter-spacing:-.02em" id="member-page-title">—</h1>
+      <p style="font-size:13px;color:#9ca3af;margin-top:4px" id="member-page-sub">작성한 모든 접촉기록</p>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#8b5cf6" id="member-stat-total">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">총 접촉건</div></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#10b981" id="member-stat-positive">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">긍정 반응</div></div>
+      <div style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:10px 16px;text-align:center"><div style="font-size:20px;font-weight:900;color:#f37321" id="member-stat-corps">0</div><div style="font-size:10px;color:#9ca3af;font-weight:600;margin-top:2px">접촉 기관수</div></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center">
+    <div style="font-size:12px;font-weight:600;color:#374151;margin-right:4px">반응 필터:</div>
+    <button class="filter-pill active" id="mf-all" onclick="setMemberFilter('all',this)">전체</button>
+    <button class="filter-pill" id="mf-positive" onclick="setMemberFilter('positive',this)">긍정</button>
+    <button class="filter-pill" id="mf-neutral" onclick="setMemberFilter('neutral',this)">중립</button>
+    <button class="filter-pill" id="mf-negative" onclick="setMemberFilter('negative',this)">부정</button>
+    <button class="filter-pill" id="mf-pending" onclick="setMemberFilter('pending',this)">대기</button>
+    <div style="margin-left:auto;font-size:12px;color:#9ca3af" id="member-result-count"></div>
+  </div>
+
+  <div id="member-contact-list"></div>
+  <div id="member-no-result" style="display:none;text-align:center;padding:60px 0;color:#9ca3af;font-size:14px">
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="margin:0 auto 12px;display:block;opacity:.3"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    아직 작성된 접촉기록이 없습니다
+  </div>
+</div>
+
+</main>
+
+<div id="alarm-panel">
+  <div id="alarm-body">
+    <div class="alarm-head">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:700;color:#111827">발행공시 알람</span>
+        <span style="font-size:9px;font-weight:700;background:#fff7ed;color:#c2410c;padding:2px 7px;border-radius:4px">자금유동성 전용</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="alarm-last-update" style="font-size:10px;color:#9ca3af"></span>
+        <button onclick="refreshAlarm()" style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:10px;font-weight:700;font-family:'Noto Sans KR',sans-serif;padding:2px 6px;border-radius:4px;border:1px solid #e5e7eb" onmouseover="this.style.borderColor='#f37321';this.style.color='#f37321'" onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#9ca3af'">갱신</button>
+      </div>
+    </div>
+    <div class="alarm-filter-bar" id="alarm-filter-bar">
+      <button class="alarm-filter-btn active" onclick="setAlarmFilter('all',this)">전체</button>
+      <button class="alarm-filter-btn" onclick="setAlarmFilter('C002',this)">🔴 채무증권</button>
+      <button class="alarm-filter-btn" onclick="setAlarmFilter('C001',this)">🟢 지분증권</button>
+      <button class="alarm-filter-btn" onclick="setAlarmFilter('C006',this)">소액공모(지분)</button>
+      <button class="alarm-filter-btn" onclick="setAlarmFilter('C007',this)">소액공모(채무)</button>
+    </div>
+    <div class="alarm-list" id="alarm-list"></div>
+    <div class="alarm-footer">
+      <input id="alarm-apikey-input" type="text" placeholder="DART API 키 입력 (선택)">
+      <button onclick="connectAlarmApi()">연동</button>
+    </div>
+    <div style="padding:8px 16px 12px;font-size:9px;color:#9ca3af;line-height:1.45;border-top:1px solid #f3f4f6">
+      실시간 Open DART는 브라우저 CORS 때문에 <b style="color:#374151">로컬 프록시</b>가 필요합니다.
+      터미널: <span class="mono" style="color:#6b7280">node server.mjs</span> (또는 <span class="mono">npm start</span>) →
+      <span class="mono" style="color:#f37321">http://127.0.0.1:8787</span> · <span class="mono">file://</span> 로 연 index.html 은 같은 PC에서 서버만 켜면 API가 붙습니다.
+    </div>
+  </div>
+  <button id="alarm-toggle" onclick="toggleAlarm()">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    발행공시 알람
+    <span id="alarm-badge">0</span>
+    <span style="margin-left:auto;font-size:10px;color:#6b7280" id="alarm-chevron">▲</span>
+  </button>
+</div>
+
+<!-- Open DART 재무제표 요약 모달 -->
+<div id="dart-fin-backdrop" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:500;align-items:center;justify-content:center;padding:20px" onclick="if(event.target===this)closeDartFin()">
+  <div style="background:#fff;border-radius:16px;max-width:760px;width:100%;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;border:1px solid #e5e7eb;box-shadow:0 20px 50px rgba(0,0,0,.2)" onclick="event.stopPropagation()">
+    <div style="padding:16px 20px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <div id="dart-fin-title" style="font-size:15px;font-weight:800;color:#111827">재무제표</div>
+      <button type="button" onclick="closeDartFin()" style="background:#f3f4f6;border:none;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:700;font-size:12px;font-family:inherit">닫기</button>
+    </div>
+    <div id="dart-fin-body" style="padding:16px 20px;overflow-y:auto;font-size:12px;color:#374151"></div>
+  </div>
+</div>
+
+<script>
+const companies = [
+  {name:"삼성전자",code:"005930",sector:"반도체·전자",liquidity:"148.7조",currentRatio:185,status:"우선영업",issue:"현금성 자산 충분, 단기채 매입 기회"},
+  {name:"SK하이닉스",code:"000660",sector:"반도체",liquidity:"32.1조",currentRatio:172,status:"우선영업",issue:"설비투자 확대, CP 발행 가능성"},
+  {name:"LG에너지솔루션",code:"373220",sector:"2차전지",liquidity:"18.4조",currentRatio:155,status:"우선영업",issue:"수주잔고 급증, 단기자금 수요 예상"},
+  {name:"삼성바이오로직스",code:"207940",sector:"바이오",liquidity:"9.2조",currentRatio:210,status:"우선영업",issue:"현금 보유 여력 우수"},
+  {name:"현대자동차",code:"005380",sector:"자동차",liquidity:"61.3조",currentRatio:143,status:"우선영업",issue:"EV 전환 투자 확대"},
+  {name:"NAVER",code:"035420",sector:"IT·플랫폼",liquidity:"8.7조",currentRatio:198,status:"우선영업",issue:"AI 투자 본격화, 유동자금 활용 여지"},
+  {name:"카카오",code:"035720",sector:"IT·플랫폼",liquidity:"5.3조",currentRatio:162,status:"우선영업",issue:"계열사 정리 후 현금 유입 예상"},
+  {name:"삼성SDI",code:"006400",sector:"2차전지",liquidity:"12.8조",currentRatio:177,status:"우선영업",issue:"배터리 수주 증가"},
+  {name:"LG화학",code:"051910",sector:"화학",liquidity:"14.2조",currentRatio:138,status:"일반관찰",issue:"배터리 분사 후 유동성 소폭 감소"},
+  {name:"포스코홀딩스",code:"005490",sector:"철강",liquidity:"22.5조",currentRatio:131,status:"일반관찰",issue:"원자재 가격 변동 영향"},
+  {name:"기아",code:"000270",sector:"자동차",liquidity:"28.6조",currentRatio:145,status:"우선영업",issue:"주주환원 강화, 잉여현금 증가"},
+  {name:"현대모비스",code:"012330",sector:"자동차부품",liquidity:"11.9조",currentRatio:153,status:"우선영업",issue:"전동화 부품 수주 확대"},
+  {name:"셀트리온",code:"068270",sector:"바이오",liquidity:"4.1조",currentRatio:189,status:"우선영업",issue:"바이오시밀러 허가 증가"},
+  {name:"삼성물산",code:"028260",sector:"건설·상사",liquidity:"19.3조",currentRatio:160,status:"우선영업",issue:"배당 확대 여력"},
+  {name:"SK이노베이션",code:"096770",sector:"에너지",liquidity:"13.7조",currentRatio:118,status:"유동성경보",issue:"배터리 투자 부담, 단기차입 증가"},
+  {name:"한국전력",code:"015760",sector:"유틸리티",liquidity:"5.8조",currentRatio:72,status:"유동성경보",issue:"전기요금 동결로 현금흐름 악화"},
+  {name:"LG전자",code:"066570",sector:"전자",liquidity:"16.4조",currentRatio:134,status:"일반관찰",issue:"가전 수요 회복세"},
+  {name:"SK텔레콤",code:"017670",sector:"통신",liquidity:"7.2조",currentRatio:91,status:"유동성경보",issue:"배당 부담 + CAPEX 증가"},
+  {name:"KT",code:"030200",sector:"통신",liquidity:"6.9조",currentRatio:88,status:"유동성경보",issue:"회사채 만기 도래 대규모"},
+  {name:"롯데케미칼",code:"011170",sector:"화학",liquidity:"5.4조",currentRatio:105,status:"유동성경보",issue:"업황 부진, 재고 증가"},
+  {name:"고려아연",code:"010130",sector:"비철금속",liquidity:"3.8조",currentRatio:192,status:"우선영업",issue:"아연 가격 강세, 현금 축적"},
+  {name:"한화에어로스페이스",code:"012450",sector:"방산·항공",liquidity:"6.7조",currentRatio:148,status:"우선영업",issue:"방산 수출 증가, 유동자금 확대"},
+  {name:"두산에너빌리티",code:"034020",sector:"중공업",liquidity:"4.2조",currentRatio:112,status:"일반관찰",issue:"원전 수주 증가, 실적 개선 중"},
+  {name:"신한금융지주",code:"055550",sector:"금융",liquidity:"8.1조",currentRatio:220,status:"우선영업",issue:"이자이익 증가, 단기 운용자금 여력"},
+  {name:"KB금융",code:"105560",sector:"금융",liquidity:"9.4조",currentRatio:215,status:"우선영업",issue:"우량 여신 증가, 배당 확대"},
+  {name:"하나금융지주",code:"086790",sector:"금융",liquidity:"6.3조",currentRatio:207,status:"우선영업",issue:"글로벌 확장 가속"},
+  {name:"우리금융지주",code:"316140",sector:"금융",liquidity:"5.7조",currentRatio:198,status:"우선영업",issue:"비이자이익 확대"},
+  {name:"삼성화재",code:"000810",sector:"보험",liquidity:"7.6조",currentRatio:231,status:"우선영업",issue:"투자자산 운용 여력 충분"},
+  {name:"현대해상",code:"001450",sector:"보험",liquidity:"4.3조",currentRatio:218,status:"우선영업",issue:"보험료 인상 효과"},
+  {name:"한국타이어앤테크놀로지",code:"161390",sector:"타이어",liquidity:"3.2조",currentRatio:165,status:"우선영업",issue:"글로벌 점유율 상승"},
+  {name:"CJ제일제당",code:"097950",sector:"식품",liquidity:"2.8조",currentRatio:122,status:"일반관찰",issue:"원재료비 부담 지속"},
+  {name:"롯데쇼핑",code:"023530",sector:"유통",liquidity:"3.1조",currentRatio:95,status:"유동성경보",issue:"오프라인 점포 구조조정 비용"},
+  {name:"이마트",code:"139480",sector:"유통",liquidity:"2.4조",currentRatio:89,status:"유동성경보",issue:"온라인 전환 투자 부담"},
+  {name:"아모레퍼시픽",code:"090430",sector:"화장품",liquidity:"2.1조",currentRatio:175,status:"우선영업",issue:"중국 리오프닝 수혜"},
+  {name:"LG생활건강",code:"051900",sector:"화장품",liquidity:"1.9조",currentRatio:168,status:"우선영업",issue:"프리미엄 브랜드 성장"},
+  {name:"오리온",code:"271560",sector:"식품",liquidity:"1.4조",currentRatio:195,status:"우선영업",issue:"해외 법인 현금창출 우수"},
+  {name:"농심",code:"004370",sector:"식품",liquidity:"0.9조",currentRatio:183,status:"우선영업",issue:"해외 라면 수출 증가"},
+  {name:"KT&G",code:"033780",sector:"담배",liquidity:"3.6조",currentRatio:241,status:"우선영업",issue:"현금창출력 최우수, 배당 여력 풍부"},
+  {name:"한국항공우주",code:"047810",sector:"방산·항공",liquidity:"2.3조",currentRatio:143,status:"우선영업",issue:"FA-50 수출 확대"},
+  {name:"LIG넥스원",code:"079550",sector:"방산",liquidity:"1.7조",currentRatio:158,status:"우선영업",issue:"유도무기 수주 급증"},
+  {name:"HD현대중공업",code:"329180",sector:"조선",liquidity:"8.3조",currentRatio:127,status:"일반관찰",issue:"수주잔고 역대 최대, 건조물량 증가"},
+  {name:"삼성중공업",code:"010140",sector:"조선",liquidity:"4.1조",currentRatio:108,status:"일반관찰",issue:"LNG선 수주 증가로 회복세"},
+  {name:"한진칼",code:"180640",sector:"항공",liquidity:"2.9조",currentRatio:132,status:"일반관찰",issue:"국제선 여객 정상화"},
+  {name:"대한항공",code:"003490",sector:"항공",liquidity:"5.4조",currentRatio:89,status:"유동성경보",issue:"항공기 도입 부채 증가"},
+  {name:"CJ ENM",code:"035760",sector:"미디어",liquidity:"1.3조",currentRatio:147,status:"우선영업",issue:"K-콘텐츠 수출 확대"},
+  {name:"HYBE",code:"352820",sector:"엔터테인먼트",liquidity:"1.6조",currentRatio:203,status:"우선영업",issue:"멀티레이블 성장, 현금 여력 우수"},
+  {name:"SM엔터테인먼트",code:"041510",sector:"엔터테인먼트",liquidity:"0.8조",currentRatio:188,status:"우선영업",issue:"글로벌 아티스트 확보"},
+  {name:"크래프톤",code:"259960",sector:"게임",liquidity:"3.1조",currentRatio:267,status:"우선영업",issue:"PUBG 글로벌 현금창출 최강"},
+  {name:"엔씨소프트",code:"036570",sector:"게임",liquidity:"1.4조",currentRatio:195,status:"우선영업",issue:"신작 라인업 기대"},
+  {name:"카카오게임즈",code:"293490",sector:"게임",liquidity:"0.6조",currentRatio:172,status:"우선영업",issue:"모바일 신작 출시"},
+  {name:"삼성엔지니어링",code:"028050",sector:"건설·EPC",liquidity:"3.8조",currentRatio:148,status:"우선영업",issue:"중동 플랜트 수주 증가"},
+  {name:"현대건설",code:"000720",sector:"건설",liquidity:"6.2조",currentRatio:135,status:"일반관찰",issue:"해외 수주 회복"},
+  {name:"GS건설",code:"006360",sector:"건설",liquidity:"3.4조",currentRatio:98,status:"유동성경보",issue:"미분양 증가, PF 리스크"},
+  {name:"HDC현대산업개발",code:"294870",sector:"건설",liquidity:"2.1조",currentRatio:93,status:"유동성경보",issue:"광주 사고 이후 수주 감소"},
+  {name:"OCI",code:"010060",sector:"화학",liquidity:"1.8조",currentRatio:168,status:"우선영업",issue:"태양광 폴리실리콘 가격 반등"},
+  {name:"금호석유",code:"011780",sector:"화학",liquidity:"2.3조",currentRatio:176,status:"우선영업",issue:"합성고무 수요 회복"},
+  {name:"에코프로비엠",code:"247540",sector:"2차전지소재",liquidity:"1.5조",currentRatio:138,status:"일반관찰",issue:"양극재 수요 회복 기대"},
+  {name:"포스코퓨처엠",code:"003670",sector:"2차전지소재",liquidity:"2.4조",currentRatio:142,status:"우선영업",issue:"양극재·음극재 동시 성장"},
+  {name:"강원랜드",code:"035250",sector:"레저",liquidity:"1.9조",currentRatio:258,status:"우선영업",issue:"현금창출력 최우수, 배당 여력 풍부"},
+  {name:"호텔신라",code:"008770",sector:"면세·호텔",liquidity:"1.1조",currentRatio:112,status:"일반관찰",issue:"중국 관광객 회복세"},
+  {name:"GKL",code:"114090",sector:"레저",liquidity:"0.7조",currentRatio:231,status:"우선영업",issue:"외국인 카지노 정상화"},
+  {name:"현대백화점",code:"069960",sector:"유통",liquidity:"2.2조",currentRatio:118,status:"일반관찰",issue:"프리미엄 소비 강세"},
+  {name:"신세계",code:"004170",sector:"유통",liquidity:"3.1조",currentRatio:105,status:"일반관찰",issue:"복합쇼핑몰 확장"},
+  {name:"GS리테일",code:"007070",sector:"유통",liquidity:"1.3조",currentRatio:94,status:"유동성경보",issue:"편의점 경쟁 심화"},
+  {name:"BGF리테일",code:"282330",sector:"유통",liquidity:"0.8조",currentRatio:108,status:"일반관찰",issue:"CU 점포 수 증가"},
+  {name:"오뚜기",code:"007310",sector:"식품",liquidity:"0.9조",currentRatio:178,status:"우선영업",issue:"브랜드 충성도 우수"},
+  {name:"하이트진로",code:"000080",sector:"주류",liquidity:"0.7조",currentRatio:87,status:"유동성경보",issue:"주류세 부담, 재고 증가"},
+  {name:"한미약품",code:"128940",sector:"제약",liquidity:"0.8조",currentRatio:169,status:"우선영업",issue:"비만치료제 파이프라인 기대"},
+  {name:"유한양행",code:"000100",sector:"제약",liquidity:"1.1조",currentRatio:182,status:"우선영업",issue:"렉라자 글로벌 허가"},
+  {name:"종근당",code:"185750",sector:"제약",liquidity:"0.6조",currentRatio:148,status:"우선영업",issue:"신약 파이프라인 확충"},
+  {name:"대웅제약",code:"069620",sector:"제약",liquidity:"0.5조",currentRatio:141,status:"우선영업",issue:"나보타 수출 확대"},
+  {name:"서울반도체",code:"046890",sector:"반도체",liquidity:"0.7조",currentRatio:173,status:"우선영업",issue:"LED 특허 로열티 수입"},
+  {name:"원익IPS",code:"240810",sector:"반도체장비",liquidity:"0.6조",currentRatio:159,status:"우선영업",issue:"삼성 투자 재개 수혜"},
+  {name:"주성엔지니어링",code:"036930",sector:"반도체장비",liquidity:"0.3조",currentRatio:185,status:"우선영업",issue:"장비 수주 급증"},
+  {name:"솔브레인",code:"357780",sector:"반도체소재",liquidity:"0.8조",currentRatio:195,status:"우선영업",issue:"식각액 수요 급증"},
+  {name:"SK바이오팜",code:"326030",sector:"바이오",liquidity:"0.9조",currentRatio:347,status:"우선영업",issue:"엑스코프리 미국 매출 성장"},
+  {name:"휴젤",code:"145020",sector:"의료미용",liquidity:"0.6조",currentRatio:261,status:"우선영업",issue:"보툴리눔 톡신 글로벌 확장"},
+  {name:"클래시스",code:"214150",sector:"의료기기",liquidity:"0.3조",currentRatio:289,status:"우선영업",issue:"슈링크 장비 수출 급증"},
+  {name:"더존비즈온",code:"012510",sector:"IT·SaaS",liquidity:"0.4조",currentRatio:192,status:"우선영업",issue:"ERP·클라우드 전환 수혜"},
+  {name:"카카오페이",code:"377300",sector:"핀테크",liquidity:"1.2조",currentRatio:312,status:"우선영업",issue:"현금성 자산 풍부"},
+  {name:"삼성SDS",code:"018260",sector:"IT서비스",liquidity:"3.2조",currentRatio:228,status:"우선영업",issue:"클라우드 매출 급성장"},
+  {name:"현대오토에버",code:"307950",sector:"IT서비스",liquidity:"0.9조",currentRatio:183,status:"우선영업",issue:"차량 소프트웨어 성장"},
+  {name:"풍산",code:"103140",sector:"비철금속",liquidity:"1.2조",currentRatio:128,status:"일반관찰",issue:"방산 수요로 동 제품 호조"},
+  {name:"세아베스틸지주",code:"001430",sector:"철강",liquidity:"0.8조",currentRatio:145,status:"우선영업",issue:"특수강 수요 회복"},
+  {name:"LS",code:"006260",sector:"전선·인프라",liquidity:"2.1조",currentRatio:118,status:"일반관찰",issue:"전력망 인프라 확장 수혜"},
+  {name:"한화솔루션",code:"009830",sector:"에너지·화학",liquidity:"4.3조",currentRatio:118,status:"일반관찰",issue:"태양광 모듈 미국 수출 증가"},
+  {name:"두산밥캣",code:"241560",sector:"건설기계",liquidity:"2.7조",currentRatio:163,status:"우선영업",issue:"북미 컴팩트 장비 수요 강세"},
+  {name:"현대두산인프라코어",code:"042670",sector:"건설기계",liquidity:"2.1조",currentRatio:135,status:"일반관찰",issue:"중국 수요 회복 기대"},
+  {name:"S-Oil",code:"010950",sector:"정유",liquidity:"5.9조",currentRatio:97,status:"유동성경보",issue:"정제마진 축소, 재고평가손 발생"},
+  {name:"케이카",code:"381970",sector:"중고차",liquidity:"0.4조",currentRatio:152,status:"우선영업",issue:"중고차 거래 플랫폼 성장"},
+  {name:"한샘",code:"009240",sector:"인테리어",liquidity:"0.5조",currentRatio:131,status:"일반관찰",issue:"리모델링 수요 회복 중"},
+  {name:"코웨이",code:"021240",sector:"렌탈",liquidity:"0.8조",currentRatio:143,status:"우선영업",issue:"동남아 렌탈 확장"},
+  {name:"현대글로비스",code:"086280",sector:"물류",liquidity:"3.4조",currentRatio:156,status:"우선영업",issue:"자동차 물류 호조"},
+  {name:"LG유플러스",code:"032640",sector:"통신",liquidity:"2.1조",currentRatio:86,status:"유동성경보",issue:"5G 투자 부담 지속"},
+  {name:"CJ대한통운",code:"000120",sector:"물류",liquidity:"1.8조",currentRatio:112,status:"일반관찰",issue:"이커머스 물량 성장"},
+  {name:"롯데웰푸드",code:"280360",sector:"식품",liquidity:"0.6조",currentRatio:132,status:"일반관찰",issue:"해외 사업 확장"},
+  {name:"빙그레",code:"005180",sector:"식품",liquidity:"0.5조",currentRatio:165,status:"우선영업",issue:"해태아이스크림 시너지"},
+  {name:"매일유업",code:"267980",sector:"식품",liquidity:"0.4조",currentRatio:153,status:"우선영업",issue:"단백질 제품 성장"},
+  {name:"동원F&B",code:"049770",sector:"식품",liquidity:"0.6조",currentRatio:138,status:"일반관찰",issue:"참치·HMR 브랜드 확장"},
+  {name:"카카오모빌리티",code:"비상장",sector:"모빌리티",liquidity:"0.7조",currentRatio:168,status:"우선영업",issue:"택시·대리 플랫폼 확장"}
+];
+
+const SAMPLE_ALARMS = [
+  {corp_name:"LG에너지솔루션",stock_code:"373220",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260415",flr_nm:"LG에너지솔루션",rcept_no:"20260415000123",desc:"회사채 발행 — 단기 자금 조달 신호"},
+  {corp_name:"현대자동차",stock_code:"005380",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260415",flr_nm:"현대자동차",rcept_no:"20260415000124",desc:"3년물 회사채 5,000억 발행"},
+  {corp_name:"SK이노베이션",stock_code:"096770",report_nm:"증권신고서(지분증권)",pblntf_detail_ty:"C001",rcept_dt:"20260414",flr_nm:"SK이노베이션",rcept_no:"20260414000089",desc:"유상증자 — 배터리 투자 자금 조달"},
+  {corp_name:"한화솔루션",stock_code:"009830",report_nm:"소액공모(채무증권)",pblntf_detail_ty:"C007",rcept_dt:"20260414",flr_nm:"한화솔루션",rcept_no:"20260414000091",desc:"단기사채 발행 — 운전자금 확보"},
+  {corp_name:"GS건설",stock_code:"006360",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260413",flr_nm:"GS건설",rcept_no:"20260413000067",desc:"PF 차환 목적 회사채 발행"},
+  {corp_name:"이마트",stock_code:"139480",report_nm:"소액공모(지분증권)",pblntf_detail_ty:"C006",rcept_dt:"20260413",flr_nm:"이마트",rcept_no:"20260413000071",desc:"신주 소액 공모 — 온라인 전환 투자"},
+  {corp_name:"대한항공",stock_code:"003490",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260412",flr_nm:"대한항공",rcept_no:"20260412000055",desc:"항공기 도입 금융 목적 채권 발행"},
+  {corp_name:"한국전력",stock_code:"015760",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260412",flr_nm:"한국전력",rcept_no:"20260412000058",desc:"전력채 1조원 발행 — 운영 적자 보전"},
+  {corp_name:"롯데케미칼",stock_code:"011170",report_nm:"증권신고서(합병등)",pblntf_detail_ty:"C004",rcept_dt:"20260411",flr_nm:"롯데케미칼",rcept_no:"20260411000043",desc:"계열사 합병 관련 증권신고"},
+  {corp_name:"현대글로비스",stock_code:"086280",report_nm:"소액공모(채무증권)",pblntf_detail_ty:"C007",rcept_dt:"20260411",flr_nm:"현대글로비스",rcept_no:"20260411000047",desc:"CP 발행 — 단기 물류 운전자금"},
+  {corp_name:"LG유플러스",stock_code:"032640",report_nm:"증권신고서(채무증권)",pblntf_detail_ty:"C002",rcept_dt:"20260410",flr_nm:"LG유플러스",rcept_no:"20260410000031",desc:"5G 네트워크 투자 회사채"},
+  {corp_name:"포스코퓨처엠",stock_code:"003670",report_nm:"증권신고서(지분증권)",pblntf_detail_ty:"C001",rcept_dt:"20260410",flr_nm:"포스코퓨처엠",rcept_no:"20260410000035",desc:"유상증자 — 양극재 증설 자금 조달"},
+];
+
+const ISSUANCE_TYPE_LABELS = {
+  'C001': {label:'증권신고(지분)',tag:'tag-share'},
+  'C002': {label:'증권신고(채무)',tag:'tag-major'},
+  'C003': {label:'증권신고(파생)',tag:'tag-audit'},
+  'C004': {label:'증권신고(합병)',tag:'tag-major'},
+  'C005': {label:'증권신고(기타)',tag:'tag-regular'},
+  'C006': {label:'소액공모(지분)',tag:'tag-share'},
+  'C007': {label:'소액공모(채무)',tag:'tag-major'},
+  'C008': {label:'소액공모(파생)',tag:'tag-audit'},
+  'C009': {label:'소액공모(합병)',tag:'tag-major'},
+  'C010': {label:'소액공모(기타)',tag:'tag-regular'},
+  'C011': {label:'호가중개소액매출',tag:'tag-regular'},
+};
+const KEY_TYPES = ['C001','C002','C006','C007'];
+
+function isGitHubPages() {
+  try {
+    return typeof location !== 'undefined' && /\.github\.io$/i.test(location.hostname);
+  } catch (_) {
+    return false;
+  }
+}
+
+function applyGithubPagesLayout() {
+  if (!isGitHubPages()) return;
+  document.body.classList.add('github-pages');
+  const b = document.getElementById('github-pages-banner');
+  if (b) b.style.display = 'block';
+}
+applyGithubPagesLayout();
+
+/** file:// 로 열 때는 반드시 아래 주소의 서버와 짝 (npm start 기본 포트) */
+function apiUrl(p) {
+  const path = p.startsWith('/') ? p : '/' + p;
+  try {
+    if (typeof location !== 'undefined' && location.protocol === 'file:') {
+      return 'http://127.0.0.1:8787' + path;
+    }
+    if (typeof location !== 'undefined' && location.origin && location.origin !== 'null') {
+      return location.origin + path;
+    }
+  } catch (_) {}
+  return path;
+}
+
+function fmtYmdLocal(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}${m}${day}`;
+}
+
+/** 로컬 프록시(npm start) 경유 Open DART 호출 — GitHub Pages에서는 호출하지 않음 */
+async function dartPost(path, body) {
+  if (isGitHubPages()) {
+    return new Response(JSON.stringify({ error: 'GITHUB_STATIC' }), {
+      status: 503,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+  const key = (localStorage.getItem('dart_api_key') || '').trim();
+  const res = await fetch(apiUrl(path), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-DART-API-Key': key },
+    body: JSON.stringify(body),
+  });
+  return res;
+}
+
+/** 저장된 키가 있으면 입력란에만 반영 (키는 Git에 넣지 마세요 — 로컬 .env 권장) */
+function syncDartKeyInputFromStorage() {
+  const inp = document.getElementById('alarm-apikey-input');
+  const k = (localStorage.getItem('dart_api_key') || '').trim();
+  if (inp && k) inp.value = k;
+}
+
+function closeDartFin() {
+  const el = document.getElementById('dart-fin-backdrop');
+  if (el) el.style.display = 'none';
+}
+
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function pickLiquidityRows(list) {
+  const keys = ['유동자산', '유동부채', '현금및현금성자산', '단기차입금', '유동성장기부채', '매출채권', '재고자산'];
+  const picked = list.filter((r) => keys.some((k) => (r.account_nm || '').includes(k)));
+  return picked.length ? picked : list.slice(0, 30);
+}
+
+async function openDartFinancial(stockCode, corpName) {
+  if (isGitHubPages()) {
+    showToast('GitHub Pages에서는 재무 API를 호출할 수 없습니다. 로컬에서 server.mjs 와 함께 실행하세요.', 'warn');
+    return;
+  }
+  const hasClientKey = ((localStorage.getItem('dart_api_key') || '').trim()).length >= 20;
+  if (!hasClientKey) {
+    try {
+      const cr = await fetch(apiUrl('/api/dart/config'));
+      const cfg = await cr.json();
+      if (!cfg.hasServerKey) {
+        showToast('하단에서 API 키 입력 후 「연동」하거나, 서버 .env 의 DART_API_KEY 를 설정하세요', 'error');
+        return;
+      }
+    } catch {
+      showToast('로컬 서버(npm start)에서만 Open DART 재무를 조회할 수 있습니다', 'error');
+      return;
+    }
+  }
+  if (!/^\d{6}$/.test(String(stockCode))) {
+    showToast('상장 종목(6자리 종목코드)만 Open DART 재무를 조회할 수 있습니다', 'error');
+    return;
+  }
+  const bd = document.getElementById('dart-fin-backdrop');
+  const bodyEl = document.getElementById('dart-fin-body');
+  const titleEl = document.getElementById('dart-fin-title');
+  bd.style.display = 'flex';
+  titleEl.textContent = `${corpName} — 연결재무 요약 (Open DART)`;
+  bodyEl.innerHTML =
+    '<div style="text-align:center;padding:36px;color:#9ca3af"><div style="width:22px;height:22px;border:2px solid #f3f4f6;border-top-color:#f37321;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px"></div>fnlttSinglAcntAll 조회 중…</div>';
+
+  const year = new Date().getFullYear();
+  const tryYears = [year - 1, year - 2, year - 3];
+  let lastMsg = '';
+  let data = null;
+  for (const y of tryYears) {
+    const res = await dartPost('/api/dart/financial', {
+      stock_code: String(stockCode),
+      bsns_year: String(y),
+      reprt_code: '11011',
+      fs_div: 'CFS',
+    });
+    if (res.status === 404) {
+      bodyEl.innerHTML = `<div style="color:#b91c1c;line-height:1.6">로컬 프록시를 찾을 수 없습니다.<br>프로젝트 폴더에서 <code>npm install && npm start</code> 실행 후 <b>http://localhost:8787</b> 로 접속해 주세요.</div>`;
+      showToast('npm start 로 서버를 띄운 뒤 localhost로 열어 주세요', 'error');
+      return;
+    }
+    const j = await res.json().catch(() => ({}));
+    if (j.error) {
+      lastMsg = j.error;
+      continue;
+    }
+    if (j.status === '000' && j.list && j.list.length) {
+      data = j;
+      lastMsg = `${y}년 사업보고서(연결)`;
+      break;
+    }
+    lastMsg = j.message || j.status || '데이터 없음';
+    if (j.status === '013') continue;
+  }
+
+  if (!data || !data.list) {
+    bodyEl.innerHTML = `<div style="color:#b91c1c">재무 데이터를 불러오지 못했습니다.<br><span style="font-size:11px;color:#6b7280">${escapeHtml(lastMsg)}</span></div>`;
+    showToast('재무 조회 실패 — 연도·사업보고서 제출 여부를 확인해 주세요', 'warn');
+    return;
+  }
+
+  const rows = pickLiquidityRows(data.list);
+  const sub = lastMsg;
+  bodyEl.innerHTML = `
+    <div style="font-size:11px;color:#6b7280;margin-bottom:12px">${escapeHtml(sub)} · IFRS 연결(CFS) · 주요 계정만 표시</div>
+    <div style="overflow-x:auto;border:1px solid #f3f4f6;border-radius:10px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr style="background:#f9fafb">
+          <th style="text-align:left;padding:8px 10px;border-bottom:1px solid #e5e7eb">계정과목</th>
+          <th style="text-align:right;padding:8px 10px;border-bottom:1px solid #e5e7eb;width:120px">당기</th>
+          <th style="text-align:right;padding:8px 10px;border-bottom:1px solid #e5e7eb;width:120px">전기</th>
+        </tr></thead>
+        <tbody>
+          ${rows
+            .map(
+              (r) => `<tr>
+            <td style="padding:7px 10px;border-bottom:1px solid #f3f4f6">${escapeHtml(r.account_nm || '')}${r.account_detail ? ` <span style="color:#9ca3af">${escapeHtml(r.account_detail)}</span>` : ''}</td>
+            <td style="text-align:right;padding:7px 10px;border-bottom:1px solid #f3f4f6;font-family:JetBrains Mono,monospace">${escapeHtml(String(r.thstrm_amount ?? '—'))}</td>
+            <td style="text-align:right;padding:7px 10px;border-bottom:1px solid #f3f4f6;font-family:JetBrains Mono,monospace;color:#9ca3af">${escapeHtml(String(r.frmtrm_amount ?? '—'))}</td>
+          </tr>`
+            )
+            .join('')}
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:12px;font-size:10px;color:#9ca3af;line-height:1.5">출처: 금융감독원 전자공시 Open API (fnlttSinglAcntAll). 유동비율 등은 별도 계산이 필요하면 당기 유동자산·유동부채로 산출할 수 있습니다.</p>`;
+}
+
+let activeFilter = 'all', searchQ = '';
+let donutChartInst = null, histChartInst = null, ncSectorChartInst = null;
+let ncActiveFilter = 'all';
+let alarmOpen = false;
+let alarmItems = [...SAMPLE_ALARMS];
+let alarmFilter = 'all';
+let alarmInterval = null;
+
+const nPriority = companies.filter(c=>c.status==='우선영업').length;
+const nAlert    = companies.filter(c=>c.status==='유동성경보').length;
+const nNormal   = companies.filter(c=>c.status==='일반관찰').length;
+const avgRatio  = Math.round(companies.reduce((s,c)=>s+c.currentRatio,0)/companies.length);
+
+document.getElementById('kpi-total').innerHTML    = companies.length+'개<span class="kpi-arrow">→</span>';
+document.getElementById('kpi-priority').innerHTML = nPriority+'개<span class="kpi-arrow">→</span>';
+document.getElementById('kpi-alert').innerHTML    = nAlert+'건<span class="kpi-arrow">→</span>';
+document.getElementById('kpi-avg').textContent    = avgRatio+'%';
+document.getElementById('donut-center').textContent = nPriority;
+document.getElementById('alarm-badge').textContent  = SAMPLE_ALARMS.filter(a=>KEY_TYPES.includes(a.pblntf_detail_ty)).length;
+
+donutChartInst = new Chart(document.getElementById('donutChart'),{
+  type:'doughnut',
+  data:{labels:['우선영업','일반관찰','유동성경보'],datasets:[{data:[nPriority,nNormal,nAlert],backgroundColor:['#f37321','#3b82f6','#ef4444'],borderWidth:0,hoverOffset:4}]},
+  options:{responsive:true,maintainAspectRatio:true,cutout:'72%',plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>` ${d.label}: ${d.raw}개`}}}}
+});
+
+const legendEl = document.getElementById('donut-legend');
+[['우선영업',nPriority,'#f37321'],['일반관찰',nNormal,'#3b82f6'],['유동성경보',nAlert,'#ef4444']].forEach(([label,n,color])=>{
+  const pct=Math.round(n/companies.length*100);
+  legendEl.innerHTML+=`<div style="display:flex;align-items:center;justify-content:space-between"><div style="display:flex;align-items:center;gap:6px"><div style="width:8px;height:8px;border-radius:2px;background:${color};flex-shrink:0"></div><span style="font-size:11px;color:#374151;font-weight:500">${label}</span></div><div style="display:flex;align-items:center;gap:6px"><div style="width:50px;height:4px;background:#f3f4f6;border-radius:2px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${color};border-radius:2px"></div></div><span style="font-size:11px;color:#9ca3af;font-weight:600;width:28px;text-align:right">${n}개</span></div></div>`;
+});
+
+const sectorMap={};
+companies.forEach(c=>{sectorMap[c.sector]=(sectorMap[c.sector]||0)+1});
+const topSectors=Object.entries(sectorMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+const maxCount=topSectors[0][1];
+const sectorEl=document.getElementById('sector-bars');
+topSectors.forEach(([name,cnt])=>{
+  const pct=Math.round(cnt/maxCount*100);
+  sectorEl.innerHTML+=`<div class="sector-row"><div class="sector-name">${name}</div><div class="sector-track"><div class="sector-fill" style="width:${pct}%"></div></div><div class="sector-count">${cnt}</div></div>`;
+});
+
+const bins=['~99','100~149','150~199','200~249','250+'];
+const binData=[0,0,0,0,0];
+companies.forEach(c=>{
+  if(c.currentRatio<100)binData[0]++;
+  else if(c.currentRatio<150)binData[1]++;
+  else if(c.currentRatio<200)binData[2]++;
+  else if(c.currentRatio<250)binData[3]++;
+  else binData[4]++;
+});
+histChartInst = new Chart(document.getElementById('histChart'),{
+  type:'bar',
+  data:{labels:bins,datasets:[{label:'기업 수',data:binData,backgroundColor:['#ef4444','#f59e0b','#10b981','#3b82f6','#8b5cf6'],borderRadius:6,borderSkipped:false}]},
+  options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>`${d.raw}개 기업`}}},scales:{x:{grid:{display:false},ticks:{font:{size:11},color:'#9ca3af'}},y:{grid:{color:'#f3f4f6'},ticks:{font:{size:11},color:'#9ca3af'},beginAtZero:true}}}
+});
+
+function kpiClick(f){
+  document.querySelectorAll('.kpi-clickable').forEach(el=>el.classList.remove('kpi-active'));
+  const map={all:0,priority:1,alert:2,normal:3};
+  document.querySelectorAll('.kpi-clickable')[map[f]]?.classList.add('kpi-active');
+  setFilter(f);
+  document.getElementById('company-grid').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function setFilter(f){
+  activeFilter=f;
+  ['all','priority','alert','normal'].forEach(id=>{
+    document.getElementById('f-'+id)?.classList.toggle('active',id===f);
+  });
+  render();
+}
+
+function render(){
+  const grid=document.getElementById('company-grid');
+  const noResult=document.getElementById('no-result');
+  const q=searchQ.toLowerCase();
+  const list=companies.filter(c=>{
+    const fs=activeFilter==='all'||(activeFilter==='priority'&&c.status==='우선영업')||(activeFilter==='alert'&&c.status==='유동성경보')||(activeFilter==='normal'&&c.status==='일반관찰');
+    const ss=!q||c.name.includes(q)||c.code.includes(q)||c.sector.includes(q)||c.issue.includes(q);
+    return fs&&ss;
+  });
+  document.getElementById('result-count').textContent=list.length+'개 기업';
+  grid.innerHTML='';
+  if(!list.length){noResult.style.display='block';return;}
+  noResult.style.display='none';
+  list.forEach(c=>{
+    const isPriority=c.status==='우선영업';
+    const isAlert=c.status==='유동성경보';
+    const cfg=isPriority?{badge:'badge-priority',topBar:'#f37321',icon:'#f37321',bg:'rgba(243,115,33,.04)'}:isAlert?{badge:'badge-alert',topBar:'#ef4444',icon:'#ef4444',bg:'rgba(239,68,68,.04)'}:{badge:'badge-normal',topBar:'#3b82f6',icon:'#3b82f6',bg:'rgba(59,130,246,.04)'};
+    const ratioColor=c.currentRatio>=200?'#f37321':c.currentRatio>=150?'#10b981':c.currentRatio>=100?'#3b82f6':'#ef4444';
+    const barW=Math.min(c.currentRatio/3.5,100).toFixed(1);
+    const dartUrl=`https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(c.name)}`;
+    const card=document.createElement('div');
+    card.className='company-card';
+    card.style.borderTop=`3px solid ${cfg.topBar}`;
+    card.innerHTML=`
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+        <div>
+          <a href="${dartUrl}" target="_blank" rel="noopener" style="font-size:15px;font-weight:700;color:#111827;line-height:1.3;text-decoration:none;display:inline-flex;align-items:center;gap:5px" onmouseover="this.style.color='#f37321'" onmouseout="this.style.color='#111827'">
+            ${c.name}<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="opacity:.45;flex-shrink:0"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          </a>
+          <div style="font-size:11px;color:#9ca3af;font-weight:500;margin-top:2px;font-family:'JetBrains Mono',monospace">${c.code} · ${c.sector}</div>
+        </div>
+        <span class="badge ${cfg.badge}">${c.status}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:#f9fafb;border-radius:8px;padding:10px"><div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">유동자금</div><div style="font-size:16px;font-weight:800;color:#111827">${c.liquidity}</div></div>
+        <div style="background:#f9fafb;border-radius:8px;padding:10px"><div style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">유동비율</div><div style="font-size:16px;font-weight:800;color:${ratioColor}">${c.currentRatio}%</div></div>
+      </div>
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span style="font-size:10px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">유동비율 시각화</span>
+          <span style="font-size:10px;font-weight:700;color:${ratioColor}">기준선 100%</span>
+        </div>
+        <div class="ratio-track"><div class="ratio-fill" style="width:${barW}%;background:${ratioColor}"></div></div>
+      </div>
+      <div style="background:${cfg.bg};border-radius:8px;padding:8px 10px;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="${cfg.icon}" stroke-width="2.5" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="font-size:11px;color:#374151;line-height:1.5;font-weight:500">${c.issue}</span>
+      </div>
+      <button type="button" class="dart-fin-btn" style="width:100%;background:#111827;color:#fff;border:none;border-radius:8px;padding:9px 10px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Open DART 연결재무 (유동·현금 계정)</button>`;
+    grid.appendChild(card);
+    const finBtn = card.querySelector('.dart-fin-btn');
+    if (finBtn) {
+      if (!/^\d{6}$/.test(String(c.code))) {
+        finBtn.disabled = true;
+        finBtn.style.opacity = '0.45';
+        finBtn.style.cursor = 'not-allowed';
+        finBtn.title = '비상장 등은 Open DART 종목 매핑이 없습니다';
+      } else {
+        finBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openDartFinancial(c.code, c.name);
+        });
+      }
+    }
+  });
+}
+
+document.getElementById('search-input').addEventListener('input',e=>{searchQ=e.target.value.trim();render();});
+render();
+
+function switchTab(tab){
+  ['dart','newcorp','calendar','member'].forEach(t=>{
+    const el = document.getElementById('page-'+t);
+    if(el) el.style.display = t===tab ? 'block' : 'none';
+  });
+  ['dart','newcorp','calendar'].forEach(t=>{
+    document.getElementById('nav-'+t)?.classList.toggle('active', t===tab);
+  });
+  if(tab !== 'member'){
+    document.querySelectorAll('.nav-member-item').forEach(el=>el.classList.remove('active'));
+  }
+  if(tab==='newcorp') renderNewcorp();
+  if(tab==='calendar') renderCalendar();
+}
+
+const MEMBERS = ['김종민','오윤식','이대희','남건우','이현우','이승재'];
+const MEMBER_COLORS = {
+  '김종민':'#8b5cf6','오윤식':'#3b82f6','이대희':'#10b981',
+  '남건우':'#f37321','이현우':'#ef4444','이승재':'#f59e0b'
+};
+let currentMember = '';
+let memberFilter  = 'all';
+
+function switchMember(name) {
+  currentMember = name;
+  memberFilter  = 'all';
+  ['dart','newcorp','calendar','member'].forEach(t => {
+    const el = document.getElementById('page-'+t);
+    if(el) el.style.display = t==='member' ? 'block' : 'none';
+  });
+  ['dart','newcorp','calendar'].forEach(t=>{
+    document.getElementById('nav-'+t)?.classList.remove('active');
+  });
+  document.querySelectorAll('.nav-member-item').forEach(el=>el.classList.remove('active'));
+  document.getElementById('nav-m-'+name)?.classList.add('active');
+  document.querySelectorAll('[id^="mf-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mf-all')?.classList.add('active');
+  renderMemberView();
+}
+
+function setMemberFilter(f, btn) {
+  memberFilter = f;
+  document.querySelectorAll('[id^="mf-"]').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderMemberView();
+}
+
+function renderMemberView() {
+  const color = MEMBER_COLORS[currentMember] || '#8b5cf6';
+  document.getElementById('member-page-title').textContent = currentMember + ' 담당자';
+  document.getElementById('member-page-title').style.color = color;
+  const allRecords = [];
+  Object.entries(calContacts).forEach(([corpName, contacts]) => {
+    contacts.forEach((ct, idx) => {
+      if ((ct.member || '미지정') === currentMember) {
+        allRecords.push({ corpName, ct, idx });
+      }
+    });
+  });
+  allRecords.sort((a,b) => new Date(b.ct.date) - new Date(a.ct.date));
+  const filtered = memberFilter === 'all'
+    ? allRecords
+    : allRecords.filter(r => r.ct.feedback === memberFilter);
+  const corpSet = new Set(allRecords.map(r=>r.corpName));
+  document.getElementById('member-stat-total').textContent    = allRecords.length;
+  document.getElementById('member-stat-positive').textContent = allRecords.filter(r=>r.ct.feedback==='positive').length;
+  document.getElementById('member-stat-corps').textContent    = corpSet.size;
+  document.getElementById('member-page-sub').textContent      = `총 ${allRecords.length}건 · ${corpSet.size}개 기관`;
+  document.getElementById('member-result-count').textContent  = filtered.length + '건';
+  const listEl   = document.getElementById('member-contact-list');
+  const noResult = document.getElementById('member-no-result');
+  if (!filtered.length) {
+    listEl.innerHTML = '';
+    noResult.style.display = 'block';
+    return;
+  }
+  noResult.style.display = 'none';
+  const typeLabels = { call:'전화', meet:'미팅', mail:'이메일', visit:'방문' };
+  const fbLabels   = { positive:'긍정', neutral:'중립', negative:'부정', pending:'대기' };
+  const fbColors   = { positive:'#10b981', neutral:'#9ca3af', negative:'#ef4444', pending:'#f59e0b' };
+  const fbBg       = { positive:'#f0fdf4', neutral:'#f9fafb', negative:'#fef2f2', pending:'#fffbeb' };
+  listEl.innerHTML = filtered.map(({corpName, ct}) => {
+    const dartUrl = `https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(corpName)}`;
+    const corp    = companies.find(c=>c.name===corpName);
+    return `
+      <div class="member-contact-card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:10px;background:${fbBg[ct.feedback]||'#f9fafb'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
+              <span style="font-size:16px">${ct.feedback==='positive'?'✅':ct.feedback==='negative'?'❌':ct.feedback==='pending'?'⏳':'➖'}</span>
+            </div>
+            <div>
+              <a href="${dartUrl}" target="_blank" rel="noopener"
+                style="font-size:14px;font-weight:700;color:#111827;text-decoration:none"
+                onmouseover="this.style.color='${color}'" onmouseout="this.style.color='#111827'">
+                ${corpName}
+              </a>
+              <div style="font-size:11px;color:#9ca3af;margin-top:1px">${corp?.sector||''} · ${corp?.liquidity||''}</div>
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0">
+            <div style="font-size:12px;font-weight:600;color:#374151">${ct.date}</div>
+            <div style="display:flex;gap:4px;justify-content:flex-end;margin-top:4px">
+              <span style="font-size:9px;font-weight:700;background:#faf5ff;color:#7c3aed;padding:2px 6px;border-radius:4px">${typeLabels[ct.type]||ct.type}</span>
+              <span style="font-size:9px;font-weight:700;background:${fbBg[ct.feedback]||'#f9fafb'};color:${fbColors[ct.feedback]||'#6b7280'};padding:2px 6px;border-radius:4px">${fbLabels[ct.feedback]||ct.feedback}</span>
+            </div>
+          </div>
+        </div>
+        ${ct.note ? `<div style="font-size:12px;color:#374151;line-height:1.7;background:#f9fafb;border-radius:8px;padding:10px 12px;border-left:3px solid ${color}">${ct.note}</div>` : '<div style="font-size:11px;color:#d1d5db;font-style:italic">메모 없음</div>'}
+      </div>`;
+  }).join('');
+}
+
+function parseCash(str){
+  const n=parseFloat(str.replace('조','').replace(',',''));
+  return isNaN(n)?0:Math.round(n*10000);
+}
+function fmtCash(val){
+  if(val>=10000)return(val/10000).toFixed(1)+'조';
+  return val.toLocaleString()+'억';
+}
+function getSectorGroup(sector){
+  if(['금융','보험'].some(s=>sector.includes(s)))return'finance';
+  if(['IT','SaaS','게임','핀테크'].some(s=>sector.includes(s)))return'tech';
+  return'mfg';
+}
+
+function ncFilter(f){
+  ncActiveFilter=f;
+  ['all','top20','finance','mfg','tech'].forEach(id=>{document.getElementById('ncf-'+id)?.classList.toggle('active',id===f);});
+  renderNewcorp();
+}
+
+function renderNewcorp(){
+  const data=companies.map(c=>({...c,cashVal:parseCash(c.liquidity)})).sort((a,b)=>b.cashVal-a.cashVal);
+  let filtered=data;
+  if(ncActiveFilter==='top20')filtered=data.slice(0,20);
+  if(ncActiveFilter==='finance')filtered=data.filter(c=>getSectorGroup(c.sector)==='finance');
+  if(ncActiveFilter==='mfg')filtered=data.filter(c=>getSectorGroup(c.sector)==='mfg');
+  if(ncActiveFilter==='tech')filtered=data.filter(c=>getSectorGroup(c.sector)==='tech');
+  const totalCash=data.reduce((s,c)=>s+c.cashVal,0);
+  const maxItem=data[0];
+  const over100t=data.filter(c=>c.cashVal>=1000000).length;
+  const avgCash=Math.round(totalCash/data.length);
+  document.getElementById('nc-kpi-total-cash').textContent=fmtCash(totalCash);
+  document.getElementById('nc-kpi-max-cash').textContent=fmtCash(maxItem.cashVal);
+  document.getElementById('nc-kpi-max-name').textContent=maxItem.name;
+  document.getElementById('nc-kpi-100t').textContent=over100t+'개';
+  document.getElementById('nc-kpi-avg-cash').textContent=fmtCash(avgCash);
+  document.getElementById('nc-rank-count').textContent=filtered.length+'개 기업';
+  const maxVal=filtered[0]?.cashVal||1;
+  const listEl=document.getElementById('nc-rank-list');
+  listEl.innerHTML='';
+  filtered.forEach((c,i)=>{
+    const pct=Math.round(c.cashVal/maxVal*100);
+    const statusColor=c.status==='우선영업'?'#f37321':c.status==='유동성경보'?'#ef4444':'#3b82f6';
+    const rankColor=i===0?'#f37321':i===1?'#6b7280':i===2?'#b45309':'#d1d5db';
+    const dartUrl=`https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(c.name)}`;
+    const row=document.createElement('div');
+    row.style.cssText='display:grid;grid-template-columns:44px 1fr 100px;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #f9fafb;transition:background .1s;cursor:pointer';
+    row.onmouseover=()=>row.style.background='#fdf8f5';
+    row.onmouseout=()=>row.style.background='';
+    row.onclick=()=>window.open(dartUrl,'_blank');
+    row.innerHTML=`
+      <div style="text-align:center"><div style="font-size:18px;font-weight:900;color:${rankColor};line-height:1">${i+1}</div><div style="font-size:9px;color:#9ca3af;font-weight:600;margin-top:1px">${c.code!=='비상장'?c.code:'-'}</div></div>
+      <div>
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><span style="font-size:13px;font-weight:700;color:#111827">${c.name}</span><span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px;background:${c.status==='우선영업'?'#fff7ed':c.status==='유동성경보'?'#fef2f2':'#eff6ff'};color:${statusColor}">${c.status}</span></div>
+        <div style="font-size:10px;color:#9ca3af;margin-bottom:5px">${c.sector}</div>
+        <div style="background:#f3f4f6;border-radius:3px;height:5px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${i<3?'#f37321':i<10?'#fb923c':'#fcd34d'};border-radius:3px;transition:width .5s ease"></div></div>
+      </div>
+      <div style="text-align:right"><div style="font-size:14px;font-weight:800;color:#111827">${fmtCash(c.cashVal)}</div><div style="font-size:10px;color:#9ca3af;margin-top:2px">현금성 자산</div></div>`;
+    listEl.appendChild(row);
+  });
+  const sectorCash={};
+  data.forEach(c=>{sectorCash[c.sector]=(sectorCash[c.sector]||0)+c.cashVal;});
+  const topS=Object.entries(sectorCash).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  if(ncSectorChartInst)ncSectorChartInst.destroy();
+  ncSectorChartInst=new Chart(document.getElementById('nc-sector-chart'),{
+    type:'bar',
+    data:{labels:topS.map(([s])=>s),datasets:[{label:'현금성 자산(억원)',data:topS.map(([,v])=>v),backgroundColor:['#f37321','#fb923c','#fbbf24','#34d399','#60a5fa','#a78bfa','#f472b6','#94a3b8'],borderRadius:6,borderSkipped:false}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:d=>' '+fmtCash(d.raw)}}},scales:{x:{grid:{color:'#f3f4f6'},ticks:{font:{size:10},color:'#9ca3af',callback:v=>fmtCash(v)}},y:{grid:{display:false},ticks:{font:{size:11},color:'#374151'}}}}
+  });
+  const bands=[{label:'50조 이상',min:500000,color:'#f37321'},{label:'10조~50조',min:100000,color:'#fb923c'},{label:'1조~10조',min:10000,color:'#fbbf24'},{label:'1000억~1조',min:1000,color:'#34d399'},{label:'1000억 미만',min:0,color:'#94a3b8'}];
+  const distEl=document.getElementById('nc-cash-dist');
+  distEl.innerHTML='';
+  bands.forEach((b,i)=>{
+    const next=bands[i-1]?.min||Infinity;
+    const cnt=data.filter(c=>c.cashVal>=b.min&&c.cashVal<next).length;
+    const pct=Math.round(cnt/data.length*100);
+    distEl.innerHTML+=`<div style="display:flex;align-items:center;gap:8px"><div style="width:82px;font-size:11px;color:#374151;font-weight:500;flex-shrink:0">${b.label}</div><div style="flex:1;background:#f3f4f6;border-radius:3px;height:7px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${b.color};border-radius:3px"></div></div><div style="font-size:11px;font-weight:700;color:#374151;width:36px;text-align:right">${cnt}개</div></div>`;
+  });
+  const top5El=document.getElementById('nc-top5-links');
+  top5El.innerHTML='';
+  data.slice(0,5).forEach((c,i)=>{
+    const dartUrl=`https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(c.name)}`;
+    top5El.innerHTML+=`<a href="${dartUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border-radius:8px;text-decoration:none;transition:background .1s" onmouseover="this.style.background='#fff7ed'" onmouseout="this.style.background='#f9fafb'"><div style="display:flex;align-items:center;gap:8px"><div style="width:20px;height:20px;border-radius:50%;background:${i===0?'#f37321':i===1?'#6b7280':i===2?'#b45309':'#e5e7eb'};color:${i<3?'#fff':'#6b7280'};font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i+1}</div><span style="font-size:12px;font-weight:700;color:#111827">${c.name}</span></div><div style="display:flex;align-items:center;gap:5px"><span style="font-size:11px;font-weight:700;color:#f37321">${fmtCash(c.cashVal)}</span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div></a>`;
+  });
+}
+
+let calContacts = JSON.parse(localStorage.getItem('cal_contacts') || '{}');
+let selectedCorp = null;
+let weeklyTop10 = [];
+
+function getWeekKey() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  const week = Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+  return `${now.getFullYear()}-W${String(week).padStart(2,'0')}`;
+}
+
+function getWeekLabel() {
+  const now = new Date();
+  const day = now.getDay() || 7;
+  const mon = new Date(now); mon.setDate(now.getDate() - day + 1);
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6);
+  const fmt = d => `${d.getMonth()+1}/${d.getDate()}`;
+  return `${fmt(mon)} ~ ${fmt(sun)}`;
+}
+
+function calcCompositeScore(c) {
+  const allCash = companies.map(x => parseCash(x.liquidity));
+  const maxCash = Math.max(...allCash);
+  const minCash = Math.min(...allCash);
+  const cashVal = parseCash(c.liquidity);
+  const cashScore = maxCash > minCash ? ((cashVal - minCash) / (maxCash - minCash)) * 40 : 20;
+  const ratio = Math.min(Math.max(c.currentRatio, 50), 300);
+  const ratioScore = ((ratio - 50) / 250) * 25;
+  const hasAlarm = alarmItems.some(a => a.corp_name && a.corp_name.includes(c.name.slice(0, 4)));
+  const alarmScore = hasAlarm ? 20 : 0;
+  const contacts = calContacts[c.name] || [];
+  let noContactScore = 15;
+  if (contacts.length > 0) {
+    const lastDate = new Date(contacts[0].date);
+    const weeksAgo = Math.floor((Date.now() - lastDate) / (7 * 24 * 60 * 60 * 1000));
+    noContactScore = Math.min(weeksAgo / 8, 1) * 15;
+  }
+  const total = cashScore + ratioScore + alarmScore + noContactScore;
+  return {
+    total: Math.round(total * 10) / 10,
+    breakdown: { cash: Math.round(cashScore * 10) / 10, vuln: Math.round(ratioScore * 10) / 10, alarm: alarmScore, noContact: Math.round(noContactScore * 10) / 10 },
+    hasAlarm, cashVal,
+  };
+}
+
+function getWeeklyTop10() {
+  return companies.map(c => ({ ...c, ...calcCompositeScore(c) })).sort((a, b) => b.total - a.total).slice(0, 10);
+}
+
+function renderCalendar() {
+  weeklyTop10 = getWeeklyTop10();
+  const listEl = document.getElementById('cal-corp-list');
+  listEl.innerHTML = '';
+  const weekLabelEl = document.getElementById('cal-week-label');
+  if (weekLabelEl) weekLabelEl.textContent = getWeekLabel() + ' · ' + getWeekKey();
+  const rankColors = ['#f37321', '#6b7280', '#b45309'];
+  weeklyTop10.forEach((c, i) => {
+    const contacts = calContacts[c.name] || [];
+    const rankBg  = i < 3 ? rankColors[i] : '#e5e7eb';
+    const rankTxt = i < 3 ? '#fff' : '#9ca3af';
+    const scoreColor = c.total >= 70 ? '#f37321' : c.total >= 50 ? '#8b5cf6' : '#3b82f6';
+    const scorePct   = Math.round(c.total);
+    const item = document.createElement('div');
+    item.className = 'cal-corp-item' + (selectedCorp === c.name ? ' selected' : '');
+    item.onclick = () => selectCorp(c.name, weeklyTop10);
+    item.innerHTML = `
+      <div class="cal-rank-badge" style="background:${rankBg};color:${rankTxt};font-size:10px">${i + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px">
+          <div style="font-size:13px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${c.name}</div>
+          ${c.hasAlarm ? '<span style="font-size:8px;font-weight:800;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:3px;flex-shrink:0">공시↑</span>' : ''}
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;background:#f3f4f6;border-radius:2px;height:4px;overflow:hidden">
+            <div style="width:${scorePct}%;height:100%;background:${scoreColor};border-radius:2px;transition:width .5s ease"></div>
+          </div>
+          <span style="font-size:10px;font-weight:800;color:${scoreColor};width:32px;text-align:right;flex-shrink:0">${c.total}점</span>
+        </div>
+      </div>
+      <div class="cal-contact-dot" style="background:${contacts.length > 0 ? '#10b981' : '#e5e7eb'}"></div>`;
+    listEl.appendChild(item);
+  });
+  updateCalStats();
+}
+
+function selectCorp(name, top10) {
+  selectedCorp = name;
+  renderCalendar();
+  const corp = top10.find(c => c.name === name);
+  const contacts = calContacts[name] || [];
+  const panel = document.getElementById('cal-detail-panel');
+  const typeLabels = { call: '전화', meet: '미팅', mail: '이메일', visit: '방문' };
+  const fbLabels   = { positive: '긍정', neutral: '중립', negative: '부정', pending: '대기' };
+  const fbColors   = { positive: '#10b981', neutral: '#9ca3af', negative: '#ef4444', pending: '#f59e0b' };
+  const bd = corp?.breakdown || {};
+  const scoreBreakdown = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px">
+      ${[
+        {label:'현금규모',val:bd.cash,max:40,color:'#8b5cf6'},
+        {label:'유동비율',val:bd.vuln,max:25,color:'#3b82f6'},
+        {label:'발행공시',val:bd.alarm,max:20,color:'#f37321'},
+        {label:'미접촉',val:bd.noContact,max:15,color:'#10b981'},
+      ].map(s => `
+        <div style="background:#f9fafb;border-radius:10px;padding:10px;text-align:center">
+          <div style="font-size:18px;font-weight:900;color:${s.color}">${s.val}</div>
+          <div style="font-size:9px;color:#9ca3af;font-weight:600;margin-top:2px">${s.label}</div>
+          <div style="background:#f3f4f6;border-radius:2px;height:3px;margin-top:5px;overflow:hidden">
+            <div style="width:${Math.round(s.val/s.max*100)}%;height:100%;background:${s.color};border-radius:2px"></div>
+          </div>
+          <div style="font-size:9px;color:#d1d5db;margin-top:2px">/ ${s.max}점</div>
+        </div>`).join('')}
+    </div>`;
+  const timelineHTML = contacts.length === 0
+    ? `<div style="text-align:center;padding:24px;color:#9ca3af;font-size:12px">아직 접촉 이력이 없습니다</div>`
+    : contacts.map((ct, idx) => `
+        <div class="cal-timeline-item">
+          <div class="cal-tl-left">
+            <div style="font-size:10px;color:#9ca3af;font-weight:600">${ct.date}</div>
+            <div class="cal-tl-dot" style="background:${fbColors[ct.feedback] || '#e5e7eb'}"></div>
+          </div>
+          <div class="cal-tl-right">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:5px;flex-wrap:wrap">
+              <span style="font-size:9px;font-weight:800;background:#faf5ff;color:#7c3aed;padding:2px 7px;border-radius:4px">${ct.member || '미지정'}</span>
+              <span class="badge ctype-${ct.type}" style="font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700">${typeLabels[ct.type] || ct.type}</span>
+              <span class="badge fb-${ct.feedback}" style="font-size:9px;padding:2px 7px;border-radius:4px;font-weight:700">${fbLabels[ct.feedback] || ct.feedback}</span>
+              <button class="cal-delete-btn" onclick="deleteContact('${name}',${idx})">✕</button>
+            </div>
+            <div style="font-size:12px;color:#374151;line-height:1.6">${ct.note || '—'}</div>
+          </div>
+        </div>`).join('');
+  panel.innerHTML = `
+    <div style="background:#fff;border-radius:16px;border:1px solid #e5e7eb;overflow:hidden">
+      <div style="padding:20px 24px;border-bottom:1px solid #f3f4f6;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <h2 style="font-size:18px;font-weight:800;color:#111827">${corp?.name || name}</h2>
+            <span style="font-size:20px;font-weight:900;color:#8b5cf6">${corp?.total || 0}점</span>
+            ${corp?.hasAlarm ? '<span style="font-size:10px;font-weight:800;background:#fff7ed;color:#c2410c;padding:2px 8px;border-radius:5px">발행공시 ↑</span>' : ''}
+          </div>
+          <div style="font-size:12px;color:#9ca3af">${corp?.sector || ''} · ${fmtCash(corp?.cashVal || 0)} · 유동비율 ${corp?.currentRatio || '—'}%</div>
+        </div>
+        <a href="https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(name)}" target="_blank"
+          style="font-size:11px;color:#f37321;font-weight:700;text-decoration:none;border:1.5px solid #f37321;padding:6px 12px;border-radius:8px">
+          DART 공시 보기 →
+        </a>
+      </div>
+      <div style="padding:20px 24px">
+        <div style="font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">복합 점수 분해</div>
+        ${scoreBreakdown}
+        <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:14px">접촉 이력 (${contacts.length}건)</div>
+        <div class="cal-timeline">${timelineHTML}</div>
+        <div style="margin-top:20px;padding-top:20px;border-top:1px solid #f3f4f6">
+          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:12px">새 접촉 기록</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:4px">날짜</div><input type="date" id="ct-date" class="cal-form-input" value="${new Date().toISOString().split('T')[0]}"></div>
+            <div><div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:4px">담당자</div><select id="ct-member" class="cal-form-select"><option value="김종민">김종민</option><option value="오윤식">오윤식</option><option value="이대희">이대희</option><option value="남건우">남건우</option><option value="이현우">이현우</option><option value="이승재">이승재</option></select></div>
+            <div><div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:4px">접촉 유형</div><select id="ct-type" class="cal-form-select"><option value="call">전화</option><option value="meet">미팅</option><option value="mail">이메일</option><option value="visit">방문</option></select></div>
+            <div><div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:4px">반응</div><select id="ct-feedback" class="cal-form-select"><option value="positive">긍정</option><option value="neutral">중립</option><option value="negative">부정</option><option value="pending">대기</option></select></div>
+          </div>
+          <div style="margin-bottom:10px">
+            <div style="font-size:10px;font-weight:600;color:#6b7280;margin-bottom:4px">메모</div>
+            <textarea id="ct-note" class="cal-form-textarea" placeholder="접촉 내용, 담당자 반응, 다음 액션 등..."></textarea>
+          </div>
+          <button class="cal-submit-btn" onclick="addContact('${name}')">기록 저장</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function addContact(name) {
+  const date     = document.getElementById('ct-date')?.value;
+  const member   = document.getElementById('ct-member')?.value || '미지정';
+  const type     = document.getElementById('ct-type')?.value;
+  const feedback = document.getElementById('ct-feedback')?.value;
+  const note     = document.getElementById('ct-note')?.value.trim();
+  if (!date) return;
+  if (!calContacts[name]) calContacts[name] = [];
+  calContacts[name].unshift({ date, member, type, feedback, note });
+  localStorage.setItem('cal_contacts', JSON.stringify(calContacts));
+  weeklyTop10 = getWeeklyTop10();
+  selectCorp(name, weeklyTop10);
+  updateCalStats();
+  showToast(`✅ [${member}] 접촉 기록 저장 완료`, 'success');
+}
+
+function deleteContact(name, idx) {
+  if (!calContacts[name]) return;
+  calContacts[name].splice(idx, 1);
+  localStorage.setItem('cal_contacts', JSON.stringify(calContacts));
+  weeklyTop10 = getWeeklyTop10();
+  selectCorp(name, weeklyTop10);
+  updateCalStats();
+}
+
+function updateCalStats() {
+  const all = Object.values(calContacts).flat();
+  document.getElementById('cal-total-contacts').textContent  = all.length;
+  document.getElementById('cal-active-corps').textContent    = Object.keys(calContacts).filter(k => calContacts[k].length > 0).length;
+  document.getElementById('cal-positive-count').textContent  = all.filter(c => c.feedback === 'positive').length;
+}
+
+function toggleAlarm(){
+  alarmOpen=!alarmOpen;
+  const body=document.getElementById('alarm-body');
+  body.style.display=alarmOpen?'flex':'none';
+  document.getElementById('alarm-chevron').textContent=alarmOpen?'▼':'▲';
+  if(alarmOpen)renderAlarmList();
+}
+
+function setAlarmFilter(f,btn){
+  alarmFilter=f;
+  document.querySelectorAll('.alarm-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlarmList();
+}
+
+function renderAlarmList(){
+  const listEl=document.getElementById('alarm-list');
+  let items=alarmFilter==='all'?alarmItems:alarmItems.filter(a=>a.pblntf_detail_ty===alarmFilter);
+  items=[...items].sort((a,b)=>{
+    const aK=KEY_TYPES.includes(a.pblntf_detail_ty)?0:1;
+    const bK=KEY_TYPES.includes(b.pblntf_detail_ty)?0:1;
+    return aK-bK;
+  });
+  if(!items.length){
+    listEl.innerHTML=`<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px">해당 유형의 발행공시가 없습니다</div>`;
+    return;
+  }
+  listEl.innerHTML=items.map(item=>{
+    const typeInfo=ISSUANCE_TYPE_LABELS[item.pblntf_detail_ty]||{label:item.pblntf_detail_ty||'발행공시',tag:'tag-regular'};
+    const isKey=KEY_TYPES.includes(item.pblntf_detail_ty);
+    const dartUrl=item.rcept_no?`https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${item.rcept_no}`:`https://dart.fss.or.kr/dsab001/main.do?textCrpNm=${encodeURIComponent(item.corp_name)}`;
+    const d=item.rcept_dt||'';
+    const dateStr=d.length>=8?d.slice(4,6)+'/'+d.slice(6,8):'—';
+    return `<div class="alarm-item" onclick="window.open('${dartUrl}','_blank')" style="${isKey?'border-left:3px solid #f37321;':''}">
+      <div class="alarm-corp" style="${isKey?'color:#c2410c;':''}">
+        ${isKey?'🔑 ':''}${item.corp_name}
+        <span style="font-size:10px;color:#9ca3af;font-weight:400;margin-left:4px">${item.stock_code||''}</span>
+      </div>
+      <div class="alarm-report">${item.report_nm}</div>
+      ${item.desc?`<div style="font-size:10px;color:#6b7280;margin-bottom:4px">${item.desc}</div>`:''}
+      <div class="alarm-meta">
+        <span class="alarm-tag ${typeInfo.tag}">${typeInfo.label}</span>
+        <span class="alarm-time">${dateStr} · ${item.flr_nm||''}</span>
+        ${isKey?'<span style="font-size:9px;font-weight:700;color:#f37321;margin-left:auto">자금조달 ★</span>':''}
+      </div>
+    </div>`;
+  }).join('');
+  const keyCount=alarmItems.filter(a=>KEY_TYPES.includes(a.pblntf_detail_ty)).length;
+  document.getElementById('alarm-badge').textContent=keyCount;
+}
+
+async function connectAlarmApi(){
+  if(isGitHubPages()){
+    alarmItems=[...SAMPLE_ALARMS];
+    renderAlarmList();
+    showToast('GitHub Pages — 샘플 발행공시만 표시됩니다','success');
+    document.getElementById('alarm-last-update').textContent='데모 모드';
+    return;
+  }
+  let key=document.getElementById('alarm-apikey-input').value.trim();
+  if(!key) key=(localStorage.getItem('dart_api_key')||'').trim();
+  if(!key||key.length<20){
+    const cr=await fetch(apiUrl('/api/dart/config')).catch(()=>null);
+    const cfg=cr?await cr.json().catch(()=>({})):{};
+    if(!cfg.hasServerKey){
+      showToast('❌ 입력란에 API 키를 넣거나, 서버 폴더 .env 에 DART_API_KEY 를 설정하세요','error');
+      return;
+    }
+  }else{
+    localStorage.setItem('dart_api_key',key);
+  }
+  const listEl=document.getElementById('alarm-list');
+  listEl.innerHTML=`<div style="padding:24px;text-align:center;color:#9ca3af;font-size:12px"><div style="width:20px;height:20px;border:2px solid #f3f4f6;border-top-color:#f37321;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 8px"></div>발행공시 조회 중...</div>`;
+  try{
+    const today=new Date();
+    const weekAgo=new Date(today);weekAgo.setDate(today.getDate()-7);
+    const params={pblntf_ty:'C',bgn_de:fmtYmdLocal(weekAgo),end_de:fmtYmdLocal(today),page_no:1,page_count:80,sort:'date',sort_mth:'desc'};
+    const res=await dartPost('/api/dart/list',{params});
+    if(res.status===404){
+      throw new Error('로컬 프록시 없음: node server.mjs 후 http://127.0.0.1:8787 (또는 index를 서버 / 로 열기)');
+    }
+    if(!res.ok)throw new Error(`HTTP ${res.status}`);
+    const json=await res.json();
+    if(json.error)throw new Error(json.error);
+    if(json.status==='010')throw new Error('API 키 오류');
+    if(json.status!=='000'&&json.status!=='013')throw new Error(json.message||'API 오류');
+    alarmItems=(json.list||[]).map(i=>({...i,desc:''}));
+    renderAlarmList();
+    const kc=alarmItems.filter(a=>KEY_TYPES.includes(a.pblntf_detail_ty)).length;
+    showToast(`📋 발행공시 ${alarmItems.length}건 (핵심 ${kc}건)`,'success');
+    document.getElementById('alarm-last-update').textContent='방금 갱신';
+  }catch(err){
+    alarmItems=[...SAMPLE_ALARMS];
+    renderAlarmList();
+    showToast(`⚠️ ${err.message} — 샘플 데이터 표시 중`,'warn');
+  }
+}
+
+async function refreshAlarm(){
+  if(isGitHubPages()){
+    alarmItems=[...SAMPLE_ALARMS];
+    renderAlarmList();
+    showToast('GitHub Pages — 샘플 데이터','success');
+    return;
+  }
+  const savedKey=localStorage.getItem('dart_api_key');
+  if(savedKey){
+    document.getElementById('alarm-apikey-input').value=savedKey;
+    await connectAlarmApi();
+    return;
+  }
+  try{
+    const cr=await fetch(apiUrl('/api/dart/config'));
+    const cfg=await cr.json();
+    if(cfg.hasServerKey){
+      await connectAlarmApi();
+      return;
+    }
+  }catch(_){}
+  alarmItems=[...SAMPLE_ALARMS];
+  renderAlarmList();
+  showToast('샘플 데이터로 갱신했습니다','success');
+}
+
+function showToast(msg,type='success'){
+  const colors={success:'#10b981',error:'#ef4444',warn:'#f59e0b'};
+  const el=document.createElement('div');
+  el.className='toast';
+  el.style.borderLeft=`4px solid ${colors[type]||colors.success}`;
+  el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(()=>el.remove(),4500);
+}
+
+renderAlarmList();
+
+syncDartKeyInputFromStorage();
+(async () => {
+  if (isGitHubPages()) {
+    await connectAlarmApi();
+    return;
+  }
+  try {
+    const r = await fetch(apiUrl('/api/dart/config'));
+    const c = await r.json();
+    if (c.hasServerKey) {
+      await connectAlarmApi();
+      return;
+    }
+  } catch (_) {}
+  const k = (localStorage.getItem('dart_api_key') || '').trim();
+  if (k.length >= 20) await connectAlarmApi();
+})();
+</script>
+</body>
+</html>
